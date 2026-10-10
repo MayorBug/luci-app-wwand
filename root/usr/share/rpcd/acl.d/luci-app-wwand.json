@@ -15,6 +15,7 @@
 					"modem_esim_profiles",
 					"modem_euicc_profiles",
 					"modem_get_settings",
+					"modem_get_data_mode",
 					"modem_plmn_lists",
 					"modem_probe",
 					"modem_scan_status",
@@ -37,6 +38,8 @@
 			"ubus": {
 				"wwand": [
 					"migrate",
+					"pcie_rescan",
+					"modem_set_data_mode",
 					"modem_carrier_config",
 					"modem_esim",
 					"modem_plmn_restore",

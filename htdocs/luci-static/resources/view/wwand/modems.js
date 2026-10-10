@@ -7,6 +7,7 @@
 'require wwand.simlist as simlist';
 'require wwand.rpc as wrpc';
 'require wwand.format as fmt';
+'require wwand.transport as transport';
 
 /* Network → Modems: interfaces-style overview. One row per configured
    wwand_modem with live status columns (state, SIM, registration, signal) and
@@ -17,7 +18,7 @@
    wwand_sim override list (shared wwand.simlist) closes the page. */
 
 /* ubus declarations live in the shared wwand.rpc module */
-var callStatus = wrpc.status;
+var callStatus = wrpc.statusRaw;
 var callProbe = wrpc.probe;
 var callSignal = wrpc.signal;
 var callSlots = wrpc.slots;
@@ -74,7 +75,7 @@ return view.extend({
 			L.resolveDefault(callProbe(), {}),
 			L.resolveDefault(callContexts(), {}),
 		]).then(function(r) {
-			var status = r[1] || {};
+			var status = (r[1] || {}).modems || {};
 			var names = Object.keys(status);
 
 			/* one signal AND one slot read per modem. The fan-out doubles, but
@@ -93,7 +94,7 @@ return view.extend({
 					slots[n] = both[1][i] || {};
 				});
 
-				return { status: status, probe: r[2] || {}, contexts: r[3] || {},
+				return { status: status, board: (r[1] || {}).board, probe: r[2] || {}, contexts: r[3] || {},
 				         signals: signals, slots: slots };
 			});
 		});
@@ -771,7 +772,15 @@ return view.extend({
 			window.history.replaceState(null, '', u.toString());
 		}
 
-		return m.render().then(function(mapNode) {
+		return Promise.all([ m.render(), transport.render(data.board) ]).then(function(nodes) {
+			var mapNode = nodes[0];
+			if (nodes[1]) {
+				var firstSection = mapNode.querySelector('.cbi-section');
+				if (firstSection)
+					firstSection.parentNode.insertBefore(nodes[1], firstSection);
+				else
+					mapNode.appendChild(nodes[1]);
+			}
 			if (simParam && /^[0-9A-Fa-f]{6,22}$/.test(simParam))
 				window.setTimeout(function() { simlist.openSim(simSec, simParam); }, 0);
 
